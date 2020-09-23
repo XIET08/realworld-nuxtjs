@@ -1,12 +1,21 @@
 <template>
   <div>
-    <form class="card comment-form">
+    <form class="card comment-form" @submit.prevent="submitComment">
       <div class="card-block">
-        <textarea class="form-control" placeholder="Write a comment..." rows="3"></textarea>
+        <textarea 
+          class="form-control" 
+          placeholder="Write a comment..." 
+          rows="3"
+          v-model="comment"
+          required
+        ></textarea>
       </div>
       <div class="card-footer">
-        <img src="http://i.imgur.com/Qr71crq.jpg" class="comment-author-img" />
-        <button class="btn btn-sm btn-primary">Post Comment</button>
+        <img :src="$store.state.user.image" class="comment-author-img" />
+        <button 
+          class="btn btn-sm btn-primary"
+          :disabled = "disabled"
+        >Post Comment</button>
       </div>
     </form>
 
@@ -33,7 +42,7 @@
 </template>
 
 <script>
-import { getComments } from '@/api/article'
+import { getComments, addComment } from '@/api/article'
 
 export default {
   name: 'ArticleComments',
@@ -45,12 +54,30 @@ export default {
   },
   data () {
     return {
-      comments: []  // 评论列表
+      comments: [],  // 评论列表
+      comment: '',
+      disabled: false
     }
   },
   async mounted () {
     const { data } = await getComments(this.article.slug)
     this.comments = data.comments
+  },
+  methods: {
+    async submitComment () {
+      this.disabled = true
+      try {
+        const { data } = await addComment({ 
+          comment: { body: this.comment}
+        }, this.article.slug)
+        this.disabled = false
+        this.comments.push(data.comment)
+        this.comment = ''
+      } catch (error) {
+        this.disabled = false
+        console.log(error)
+      }
+    }
   }
 }
 </script>

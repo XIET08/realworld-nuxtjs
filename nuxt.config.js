@@ -63,8 +63,8 @@ module.exports = {
     '~/plugins/dayjs.js'
   ],
   
-  server: {
-    host: '0.0.0.0',
-    port: '80'
-  }
+  // server: {
+  //   host: '0.0.0.0',
+  //   port: '80'
+  // }
 }
