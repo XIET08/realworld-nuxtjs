@@ -21,28 +21,37 @@
       <button
         class="btn btn-outline-danger btn-sm"
         :class="{ disabled: isDeleting}"
-        :disabled = "isDeleting"
+        :disabled="isDeleting"
         @click="deleteArticle()"
       >
         <i class="ion-trash-a"></i> Delete Article
       </button>
     </template>
     <template v-else>
-      <button class="btn btn-sm btn-outline-secondary" :class="{ active: article.author.following}">
+      <button
+        class="btn btn-sm btn-outline-secondary"
+        :class="{ active: article.author.following}"
+        :disabled="isFollowing"
+        @click="onFollowing(article.author)"
+      >
         <i class="ion-plus-round"></i>
         &nbsp;
-        Follow {{ article.author.username }}
+        {{ article.author.following ? 'Unfollow' : 'Follow' }} {{ article.author.username }}
         <!-- <span class="counter">({{ '10' }})</span> -->
       </button>
       &nbsp;&nbsp;
       <button
         class="btn btn-sm btn-outline-primary"
         :class="{ active: article.favorited }"
+        @click="onFavorite(article)"
+        :disabled="isFavorating"
       >
         <i class="ion-heart"></i>
         &nbsp;
-        Favorite Post
-        <span class="counter">({{ article.favoritesCount }})</span>
+        {{ article.favorited ? 'Unfavorite' : 'Favorite' }} Post
+        <span
+          class="counter"
+        >({{ article.favoritesCount }})</span>
       </button>
     </template>
   </div>
@@ -50,6 +59,8 @@
 
 <script>
 import { deleteArticle } from '@/api/article'
+import { followUser, unFollowUser } from '@/api/user'
+import { addFavorite, deleteFavorite } from '@/api/article'
 
 export default {
   name: 'ArticleMeta',
@@ -64,13 +75,15 @@ export default {
       return this.$store.state.user.username === this.article.author.username
     }
   },
-  data () {
+  data() {
     return {
-      isDeleting: false
+      isDeleting: false,
+      isFollowing: false,
+      isFavorating: false
     }
   },
   methods: {
-    async deleteArticle () {
+    async deleteArticle() {
       try {
         this.isDeleting = true
         await deleteArticle(this.article.slug)
@@ -79,8 +92,34 @@ export default {
       } catch (error) {
         this.isDeleting = false
       }
+    },
+    async onFollowing(profile) {
+      this.isFollowing = true
+      if (profile.following) {
+        await unFollowUser()
+        profile.following = false
+      } else {
+        await followUser()
+        profile.following = true
+      }
+      this.isFollowing = false
+    },
+    async onFavorite(article) {
+      this.isFavorating = true
+      if (article.favorited) {
+        // 取消点赞
+        await deleteFavorite(article.slug)
+        article.favorited = false
+        article.favoritesCount += -1
+      } else {
+        // 添加点赞
+        await addFavorite(article.slug)
+        article.favorited = true
+        article.favoritesCount += 1
+      }
+      this.isFavorating = false
     }
-  },
+  }
 }
 </script>
 

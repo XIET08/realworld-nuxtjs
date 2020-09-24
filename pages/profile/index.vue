@@ -5,20 +5,25 @@
         <div class="row">
           <div class="col-xs-12 col-md-10 offset-md-1">
             <img :src="profile.image" class="user-img" />
-            <h4> {{ profile.username }}</h4>
-            <p> {{ profile.bio }} </p>
-            <router-link 
-              class="btn btn-sm btn-outline-secondary action-btn" 
-              v-if="isUser" 
-              :to="{ name: 'setting' }">
+            <h4>{{ profile.username }}</h4>
+            <p>{{ profile.bio }}</p>
+            <router-link
+              class="btn btn-sm btn-outline-secondary action-btn"
+              v-if="isUser"
+              :to="{ name: 'setting' }"
+            >
               <i class="ion-gear-a"></i> Edit Profile Settings
             </router-link>
-            <button 
-              class="btn btn-sm btn-outline-secondary action-btn"
+            <button
+              class="btn btn-sm action-btn ng-binding btn-secondary"
+              :class="{ 'btn-outline-secondary': !profile.following, 'btn-secondary': profile.following }"
+              @click="onFollowing(profile)"
+              :disabled="isFollowing"
               v-else
             >
               <i class="ion-plus-round"></i>
-              &nbsp; Follow {{ profile.username }}
+              &nbsp;
+              {{profile.following ? 'Unfollow' : 'Follow' }} {{ profile.username }}
             </button>
           </div>
         </div>
@@ -31,29 +36,23 @@
           <div class="articles-toggle">
             <ul class="nav nav-pills outline-active">
               <li class="nav-item">
-                <span 
-                  class="nav-link" 
-                  :class="{ active: this.tab === 'author' }" 
+                <span
+                  class="nav-link"
+                  :class="{ active: this.tab === 'author' }"
                   @click="toggleTab('author')"
-                >
-                  My Articles</span>
+                >My Articles</span>
               </li>
               <li class="nav-item">
-                <span 
-                  class="nav-link" 
-                  :class="{ active: this.tab === 'favorited' }" 
+                <span
+                  class="nav-link"
+                  :class="{ active: this.tab === 'favorited' }"
                   @click="toggleTab('favorited')"
-                >
-                  Favorited Articles</span>
+                >Favorited Articles</span>
               </li>
             </ul>
           </div>
 
-          <article-item 
-            v-for="article in articles" 
-            :key="article.id"
-            :article = "article"
-          />
+          <article-item v-for="article in articles" :key="article.id" :article="article" />
         </div>
       </div>
     </div>
@@ -63,51 +62,63 @@
 <script>
 import { getProfile } from '@/api/profile'
 import { getArticles } from '@/api/article'
+import { followUser, unFollowUser } from '@/api/user'
 import ArticleItem from '@/components/article-item.vue'
 
 export default {
-    name: 'ProfileIndex',
-    middleware: ['auth'],
-    components: {
-      ArticleItem
+  name: 'ProfileIndex',
+  middleware: ['auth'],
+  components: {
+    ArticleItem
+  },
+  computed: {
+    isUser() {
+      return this.$store.state.user.username === this.profile.username
+    }
+  },
+  data() {
+    return {
+      profile: {},
+      articles: [],
+      tab: 'author',
+      isFollowing: false
+    }
+  },
+  async mounted() {
+    this.getProfile()
+    this.getArticle()
+  },
+  methods: {
+    async getProfile() {
+      const { data } = await getProfile(this.$route.params.username)
+      this.profile = data.profile
     },
-    computed: {
-      isUser () {
-        return this.$store.state.user.username === this.profile.username
+    async getArticle(tab = 'author') {
+      const { data } = await getArticles({
+        [tab]: this.$route.params.username
+      })
+      const { articles } = data
+      articles.forEach((article) => (article.favoriteDisabled = false))
+      this.articles = articles
+    },
+    toggleTab(tab) {
+      this.tab = tab
+      this.getArticle(tab)
+    },
+    async onFollowing (profile) {
+      this.isFollowing = true
+      if (profile.following) {
+        await unFollowUser()
+         profile.following = false
+      } else {
+        await followUser()
+        profile.following = true
       }
-    },
-    data () {
-      return {
-        profile: {},
-        articles: [],
-        tab: 'author'
-      }
-    },
-    async mounted () {
-      this.getProfile()
-      this.getArticle()
-    },
-    methods: {
-      async getProfile() {
-        const { data } = await getProfile(this.$route.params.username)
-        this.profile = data.profile
-      },
-      async getArticle(tab = 'author') {
-        const { data } = await getArticles({
-          [tab]: this.$route.params.username
-        })
-        const { articles } = data
-        articles.forEach(article => article.favoriteDisabled = false)
-        this.articles = articles
-      },
-      toggleTab (tab) {
-        this.tab = tab
-        this.getArticle(tab)
-      }
-    },
+      this.isFollowing = false
+    }
+  }
 }
 </script>
 
 <style>
-
 </style>

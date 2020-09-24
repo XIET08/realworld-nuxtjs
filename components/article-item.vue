@@ -57,10 +57,7 @@
 </template>
 
 <script>
-import { 
-  addFavorite,
-  deleteFavorite
-} from '@/api/article'
+import { addFavorite, deleteFavorite } from '@/api/article'
 
 export default {
   name: 'ArticleItem',

@@ -12,7 +12,6 @@ export const request = axios.create({
 export default ({ store }) => {
     // 添加请求拦截器
     request.interceptors.request.use(function (config) {
-        console.log('request interceptor ~')
         // 在发送请求之前做些什么
         const { user } = store.state 
         if (user && user.token) {
